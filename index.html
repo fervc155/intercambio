@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intercambio de regalos - Sorteo de amigo secreto por celular</title>
+<meta name="description" content="Organiza tu intercambio de regalos o amigo secreto gratis: sorteo por números o por nombres, privado y pasando el celular. Sin registro ni instalación.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#2563eb">
+<meta property="og:title" content="Intercambio de regalos - Amigo secreto">
+<meta property="og:description" content="Sorteo de intercambio de regalos por números o por nombres. Gratis, sin registro.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎁</text></svg>">
+<style>
+  body{font-family:Arial,sans-serif;background:#f3f4f6;text-align:center;padding:20px;margin:0}
+  .app{max-width:500px;margin:20px auto;background:#fff;padding:25px;border-radius:15px;box-shadow:0 0 15px #ccc}
+  .top{text-align:right;margin-bottom:50px}
+  button{padding:12px 18px;margin:8px;font-size:18px;border:0;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer}
+  button.red{background:#dc2626;font-size:14px;padding:8px 12px}
+  button.green{background:#16a34a}
+  .tabs{display:flex;gap:8px;margin-bottom:20px}
+  .tabs button{flex:1;margin:0;background:#e5e7eb;color:#111}
+  .tabs button.active{background:#2563eb;color:#fff}
+  input,textarea{padding:10px;font-size:18px;width:80%;box-sizing:border-box}
+  textarea{height:140px}
+  .hidden{display:none !important}
+  .resultado{font-size:24px;margin:25px}
+  .pool button{display:block;width:80%;margin:10px auto}
+  .error{color:#dc2626;margin:10px 0;min-height:1.2em}
+  .final{list-style:none;padding:0;font-size:20px;text-align:left;display:inline-block}
+  .final li{margin:6px 0}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:15px 0}
+  .chip{background:#e0e7ff;color:#1e3a8a;border-radius:20px;padding:6px 8px 6px 14px;font-size:16px;display:flex;align-items:center;gap:6px}
+  .chip button{margin:0;padding:2px 8px;font-size:14px;background:#c7d2fe;color:#1e3a8a;border-radius:50%}
+  .fila{display:flex;gap:6px;justify-content:center;align-items:center}
+  .fila input{width:60%}
+  button.morado{background:#7c3aed}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Reiniciar: arriba, pequeño y con confirmación -->
+  <div class="top">
+    <button class="red" id="btnReiniciar" onclick="reiniciar()">🔄 Reiniciar</button>
+  </div>
+
+  <h1>🎁 Intercambio</h1>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button id="tabNumeros" class="active" onclick="cambiarTab('numeros')">🔢 Números</button>
+    <button id="tabNombres" onclick="cambiarTab('nombres')">👥 Nombres</button>
+  </div>
+
+  <!-- CONFIGURACIÓN NÚMEROS -->
+  <div id="formNumero">
+    <h3>Cantidad de participantes</h3>
+    <input id="cantidad" type="number" min="3" max="500" value="20">
+    <div class="error" id="errNumero"></div>
+    <button onclick="crearNumeros()">Crear intercambio</button>
+  </div>
+
+  <!-- CONFIGURACIÓN NOMBRES -->
+  <div id="formNombre" class="hidden">
+    <h3>Agrega tu nombre</h3>
+    <input id="nombreInput" type="text" maxlength="40" placeholder="Escribe tu nombre"
+           autocomplete="off" onkeydown="if(event.key==='Enter'){agregarNombre();}">
+    <div class="error" id="errNombre"></div>
+    <div>
+      <button class="green" onclick="agregarNombre()">➕ Agregar otro</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <p id="contador" style="color:#64748b"></p>
+    <button class="morado" onclick="repartir()">🎲 Repartir</button>
+  </div>
+
+  <!-- JUEGO NÚMEROS -->
+  <div id="numerosJuego" class="hidden">
+    <div id="numEspera">
+      <h2>🎁 Pasa el celular</h2>
+      <p>Cuando estés listo:</p>
+      <button onclick="mostrarNumero()">Ver a quién le doy</button>
+    </div>
+    <div id="numResultado" class="hidden">
+      <div class="resultado" id="textoNumero"></div>
+      <button id="btnOcultarNumero" onclick="siguienteNumero()">Ocultar y pasar</button>
+    </div>
+    <div id="numFin" class="hidden">
+      <h2>🎉 Intercambio terminado</h2>
+      <button class="morado" id="btnRevelarNum" onclick="revelarResultados('listaFinalNumeros','btnRevelarNum')">👀 Revelar resultados</button>
+      <ul class="final hidden" id="listaFinalNumeros"></ul>
+    </div>
+  </div>
+
+  <!-- JUEGO NOMBRES -->
+  <div id="nombresJuego" class="hidden">
+    <div id="poolNombres">
+      <h2>¿Quién eres?</h2>
+      <div class="pool" id="listaBotones"></div>
+    </div>
+    <div id="nombreResultado" class="hidden">
+      <div class="resultado" id="textoNombre"></div>
+      <button onclick="ocultarNombre()">Ocultar</button>
+    </div>
+    <div id="nombresFin" class="hidden">
+      <h2>🎉 Intercambio terminado</h2>
+      <button class="morado" id="btnRevelarNom" onclick="revelarResultados('listaFinal','btnRevelarNom')">👀 Revelar resultados</button>
+      <ul class="final hidden" id="listaFinal"></ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   1. MOTOR DE SORTEO
+   Devuelve [{persona, regalo}, ...]
+   - Nadie se regala a sí mismo
+   - Sin parejas inversas (A→B y B→A)
+   - Cada uno da y recibe exactamente uno (es una permutación)
+   ========================================================= */
+// Aleatoriedad criptográfica (mejor que Math.random)
+function aleatorio(max){               // entero en [0, max)
+  const lim = Math.floor(4294967296 / max) * max;
+  const buf = new Uint32Array(1);
+  let x;
+  do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= lim);
+  return x % max;
+}
+
+function barajar(arr){                 // Fisher-Yates (uniforme)
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = aleatorio(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generarAsignaciones(lista){
+  const n = lista.length;
+  if (n < 3) throw new Error("Se necesitan al menos 3 participantes.");
+
+  const idx = lista.map((_, i) => i);
+  const distCirc = (i, j) => Math.min((j - i + n) % n, (i - j + n) % n);
+
+  // Reglas obligatorias: sin auto-regalo y sin parejas inversas
+  const valida = p => {
+    for (let i = 0; i < n; i++) if (p[i] === i || p[p[i]] === i) return false;
+    return true;
+  };
+
+  // Reglas anti-patrón (opcionales, se relajan si no hay combinaciones):
+  // d[i] = "salto" de i a quien regala (módulo n)
+  const saltos = p => p.map((j, i) => (j - i + n) % n);
+
+  // Salto constante en todos (ej. 5→3→1→4→2: siempre de 2 en 2)
+  const sinSaltoConstante = p => { const d = saltos(p); return !d.every(x => x === d[0]); };
+
+  // Sin rachas: en la cadena A→B→C no se repite el mismo salto (evita 5→3→1)
+  const sinRachas = p => { const d = saltos(p); return p.every((j, i) => d[i] !== d[j]); };
+
+  // Sin salto igual en participantes contiguos (evita 1→3, 2→4, 3→5 en la lista)
+  const sinContiguos = p => { const d = saltos(p); return d.every((x, i) => x !== d[(i + 1) % n]); };
+
+  // Nadie regala a su vecino en la lista (i→i±1). Solo n >= 8.
+  const sinVecinos = p => p.every((j, i) => distCirc(i, j) >= 2);
+
+  // De más estricto a más permisivo
+  const niveles = [];
+  if (n >= 8) niveles.push(p => sinVecinos(p) && sinRachas(p) && sinContiguos(p));
+  niveles.push(p => sinRachas(p) && sinContiguos(p));
+  niveles.push(sinRachas);
+  niveles.push(sinSaltoConstante);
+  niveles.push(() => true);
+
+  const intentos = n <= 9 ? 4000 : 6000;
+  let perm = null;
+
+  for (const extra of niveles) {
+    for (let k = 0; k < intentos && !perm; k++) {
+      const p = barajar(idx);
+      if (valida(p) && extra(p)) perm = p;
+    }
+    if (perm) break;
+  }
+
+  // Respaldo garantizado: ciclo aleatorio (válido para n >= 3)
+  if (!perm) {
+    const orden = barajar(idx);
+    perm = new Array(n);
+    for (let k = 0; k < n; k++) perm[orden[k]] = orden[(k + 1) % n];
+  }
+
+  return lista.map((persona, i) => ({ persona, regalo: lista[perm[i]] }));
+}
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let asignaciones = [];
+let ordenConsulta = [];   // orden aleatorio en que se revelan los números
+let indice = 0;
+let pendientes = [];
+let nombreActual = null;
+let participantes = [];   // nombres agregados en la configuración
+
+const $ = id => document.getElementById(id);
+const mostrar = id => $(id).classList.remove("hidden");
+const ocultar = id => $(id).classList.add("hidden");
+
+function ocultarTodo(){
+  ["formNumero","formNombre","numerosJuego","nombresJuego"].forEach(ocultar);
+}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+function cambiarTab(modo){
+  $("tabNumeros").classList.toggle("active", modo === "numeros");
+  $("tabNombres").classList.toggle("active", modo === "nombres");
+  ocultarTodo();
+  $("errNumero").textContent = "";
+  $("errNombre").textContent = "";
+  mostrar(modo === "numeros" ? "formNumero" : "formNombre");
+}
+
+function dibujarListaFinal(ulId){
+  const ul = $(ulId);
+  ul.innerHTML = "";
+  asignaciones.forEach(a => {
+    const li = document.createElement("li");
+    li.textContent = a.persona + " → " + a.regalo;
+    ul.appendChild(li);
+  });
+}
+
+function revelarResultados(ulId, btnId){
+  dibujarListaFinal(ulId);
+  mostrar(ulId);
+  ocultar(btnId);
+}
+
+/* =========================================================
+   2. INTERFAZ NÚMEROS
+   ========================================================= */
+function crearNumeros(){
+  const n = parseInt($("cantidad").value, 10);
+  if (!Number.isInteger(n) || n < 3 || n > 500) {
+    $("errNumero").textContent = "Escribe un número entre 3 y 500.";
+    return;
+  }
+  const lista = Array.from({ length: n }, (_, i) => i + 1);
+  asignaciones = generarAsignaciones(lista);
+  ordenConsulta = barajar(asignaciones);              // como sacar papelitos del bowl 1
+  indice = 0;
+
+  ocultarTodo();
+  $("tabs").classList.add("hidden");
+  mostrar("numerosJuego");
+  mostrar("numEspera");
+  ocultar("numResultado");
+  ocultar("numFin");
+}
+
+function mostrarNumero(){
+  const r = ordenConsulta[indice];
+  const cont = $("textoNumero");
+  cont.innerHTML = "Eres el participante:<br><b></b><br><br>🎁 Le das regalo a:<br><b></b>";
+  const [b1, b2] = cont.querySelectorAll("b");
+  b1.textContent = r.persona;
+  b2.textContent = r.regalo;
+  ocultar("numEspera");
+  mostrar("numResultado");
+}
+
+function siguienteNumero(){
+  $("textoNumero").innerHTML = "";     // borra la info anterior
+  ocultar("numResultado");
+  indice++;
+  if (indice >= ordenConsulta.length) {
+    mostrar("numFin");
+    return;
+  }
+  mostrar("numEspera");                // nunca muestra al siguiente automáticamente
+}
+
+/* =========================================================
+   3. INTERFAZ NOMBRES
+   ========================================================= */
+function dibujarParticipantes(){
+  const cont = $("chips");
+  cont.innerHTML = "";
+  participantes.forEach((nombre, i) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    const t = document.createElement("span");
+    t.textContent = nombre;
+    const x = document.createElement("button");
+    x.textContent = "✕";
+    x.title = "Quitar";
+    x.onclick = () => { participantes.splice(i, 1); dibujarParticipantes(); };
+    chip.appendChild(t);
+    chip.appendChild(x);
+    cont.appendChild(chip);
+  });
+  $("contador").textContent = participantes.length
+    ? "Participantes: " + participantes.length + (participantes.length < 3 ? " (mínimo 3)" : "")
+    : "";
+}
+
+// Devuelve true si agregó el nombre
+function agregarNombre(){
+  const input = $("nombreInput");
+  const nombre = input.value.trim().replace(/\s+/g, " ");
+  $("errNombre").textContent = "";
+
+  if (!nombre) {
+    $("errNombre").textContent = "Escribe un nombre primero.";
+    input.focus();
+    return false;
+  }
+  if (participantes.some(x => x.toLowerCase() === nombre.toLowerCase())) {
+    $("errNombre").textContent = "«" + nombre + "» ya está en la lista.";
+    input.focus();
+    return false;
+  }
+  participantes.push(nombre);
+  input.value = "";
+  input.focus();
+  dibujarParticipantes();
+  return true;
+}
+
+function repartir(){
+  // Si dejaron un nombre escrito sin darle "Agregar", se agrega
+  if ($("nombreInput").value.trim() && !agregarNombre()) return;
+
+  if (participantes.length < 3) {
+    $("errNombre").textContent = "Agrega al menos 3 nombres.";
+    return;
+  }
+
+  asignaciones = generarAsignaciones([...participantes]);
+  pendientes = [...participantes];
+  nombreActual = null;
+
+  ocultarTodo();
+  $("tabs").classList.add("hidden");
+  mostrar("nombresJuego");
+  mostrar("poolNombres");
+  ocultar("nombreResultado");
+  ocultar("nombresFin");
+  dibujarNombres();
+}
+
+function dibujarNombres(){
+  const cont = $("listaBotones");
+  cont.innerHTML = "";
+  pendientes.forEach(nombre => {
+    const b = document.createElement("button");
+    b.className = "green";
+    b.textContent = nombre;
+    b.onclick = () => mostrarNombre(nombre);
+    cont.appendChild(b);
+  });
+}
+
+function mostrarNombre(nombre){
+  const r = asignaciones.find(x => x.persona === nombre);
+  nombreActual = nombre;
+  const cont = $("textoNombre");
+  cont.innerHTML = "<b></b><br><br>🎁 Le das regalo a:<br><b></b>";
+  const [b1, b2] = cont.querySelectorAll("b");
+  b1.textContent = r.persona;
+  b2.textContent = r.regalo;
+  ocultar("poolNombres");
+  mostrar("nombreResultado");
+}
+
+function ocultarNombre(){
+  pendientes = pendientes.filter(x => x !== nombreActual);
+  nombreActual = null;
+  $("textoNombre").innerHTML = "";     // borra la info anterior
+  ocultar("nombreResultado");
+
+  if (pendientes.length === 0) {
+    mostrar("nombresFin");
+    return;
+  }
+
+  mostrar("poolNombres");
+  dibujarNombres();
+}
+
+/* =========================================================
+   REINICIAR (doble toque para evitar toques accidentales)
+   ========================================================= */
+let confirmandoReinicio = false;
+let timerReinicio = null;
+
+function cancelarReinicio(){
+  confirmandoReinicio = false;
+  clearTimeout(timerReinicio);
+  const btn = $("btnReiniciar");
+  btn.textContent = "🔄 Reiniciar";
+  btn.style.background = "";
+}
+
+function reiniciar(){
+  // Primer toque: pide confirmación (sin confirm(), que puede estar bloqueado)
+  if (!confirmandoReinicio) {
+    confirmandoReinicio = true;
+    const btn = $("btnReiniciar");
+    btn.textContent = "⚠️ ¿Seguro? Toca otra vez";
+    btn.style.background = "#7f1d1d";
+    timerReinicio = setTimeout(cancelarReinicio, 3000);
+    return;
+  }
+
+  // Segundo toque: reinicia todo
+  cancelarReinicio();
+  asignaciones = [];
+  pendientes = [];
+  indice = 0;
+  nombreActual = null;
+  $("textoNumero").innerHTML = "";
+  $("textoNombre").innerHTML = "";
+  $("listaFinal").innerHTML = "";
+  $("listaFinalNumeros").innerHTML = "";
+  participantes = [];
+  $("nombreInput").value = "";
+  dibujarParticipantes();
+  $("cantidad").value = 20;
+  ["numResultado","numFin","nombreResultado","nombresFin","listaFinalNumeros","listaFinal"].forEach(ocultar);
+  mostrar("btnRevelarNum");
+  mostrar("btnRevelarNom");
+  mostrar("numEspera");
+  mostrar("poolNombres");
+  $("tabs").classList.remove("hidden");
+  cambiarTab("numeros");
+}
+</script>
+</body>
+</html>
